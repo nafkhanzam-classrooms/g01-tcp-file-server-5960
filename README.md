@@ -2,10 +2,10 @@
 # Network Programming - Assignment G01
 
 ## Anggota Kelompok
-| Nama           | NRP        | Kelas     |
-| ---            | ---        | ----------|
-|                |            |           |
-|                |            |           |
+| Nama                     | NRP        | Kelas     |
+| ---                      | ---        | ----------|
+| Puspita Wijayanti Kusuma | 5025241059 | C         |
+| Christina Tan            | 5025241060 | C         |
 
 ## Link Youtube (Unlisted)
 Link ditaruh di bawah ini
