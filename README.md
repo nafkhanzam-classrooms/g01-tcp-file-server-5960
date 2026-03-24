@@ -502,6 +502,8 @@ while True:
 
 `server-select.py` adalah program server yang digunakan untuk berkomunikasi dengan client dan berjalan menggunakan mekanisme non-blocking dengan modul select, sehingga server dapat menangani banyak client secara bersamaan. Server akan menunggu aktivitas pada beberapa socket menggunakan `select.select()`, baik itu koneksi baru maupun data dari client yang sudah terhubung. Ketika ada client baru, server akan menerima koneksi menggunakan `accept()`, lalu menambahkan socket client tersebut ke dalam `sockets_list` dan menyimpan addressnya di `client_addresses`. Komunikasi antara server dan client tetap menggunakan fungsi `send_line()` untuk dan `recv_line()`.
 
+<br>
+
 ## Screenshot Hasil
 ### Modul synchronous
 `server`:
