@@ -505,20 +505,20 @@ while True:
 ## Screenshot Hasil
 ### Modul synchronous
 `server`:
-![](/g01-tcp-file-server-5960/media/sync_server.png)
+![](/media/sync_server.png)
 <br>
 
 `client`:
-![](/g01-tcp-file-server-5960/media/sync_client.png)
+![](/media/sync_client.png)
 
 <br>
 
 ### Modul select
 `server`:
-![](/g01-tcp-file-server-5960/media/select_server.png)
+![](/media/select_server.png)
 <br>
 
 `client`:
-![](/g01-tcp-file-server-5960/media/select_client1.png)
+![](/media/select_client1.png)
 
-![](/g01-tcp-file-server-5960/media/select_client1.png)
+![](/media/select_client1.png)
