@@ -521,4 +521,4 @@ while True:
 `client`:
 ![](/media/select_client1.png)
 
-![](/media/select_client1.png)
+![](/media/select_client2.png)
