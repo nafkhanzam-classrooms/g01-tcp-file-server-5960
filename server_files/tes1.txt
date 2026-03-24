@@ -1,1 +1,0 @@
-ini file tes1.txt
