@@ -2,6 +2,7 @@ import os
 import socket
 import threading
 import queue
+import time
 
 HOST = "127.0.0.1"
 PORT = 5000
@@ -12,6 +13,8 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 response_queue = queue.Queue()
 running = True
+pause_receiver = threading.Event()
+receiver_paused_ack = threading.Event()
 
 
 def send_line(sock, text):
@@ -21,7 +24,12 @@ def send_line(sock, text):
 def recv_line(sock):
     data = b""
     while not data.endswith(b"\n"):
-        part = sock.recv(1)
+        try:
+            part = sock.recv(1)
+        except socket.timeout:
+            if not data:
+                raise
+            continue
         if not part:
             return None
         data += part
@@ -32,6 +40,13 @@ def receive_messages(sock):
     global running
 
     while running:
+        if pause_receiver.is_set():
+            receiver_paused_ack.set()
+            time.sleep(0.05)
+            continue
+
+        receiver_paused_ack.clear()
+
         try:
             message = recv_line(sock)
 
@@ -45,6 +60,8 @@ def receive_messages(sock):
             else:
                 response_queue.put(message)
 
+        except socket.timeout:
+            continue
         except:
             print("\nConnection closed.")
             running = False
@@ -53,6 +70,13 @@ def receive_messages(sock):
 
 def get_response():
     return response_queue.get()
+
+def recv_line_direct(sock):
+    while running:
+        try:
+            return recv_line(sock)
+        except socket.timeout:
+            continue
 
 
 def do_list(sock):
@@ -94,28 +118,42 @@ def do_upload(sock, filename):
 
 
 def do_download(sock, filename):
-    send_line(sock, f"/download {filename}")
-    reply = get_response()
+    pause_receiver.set()
+    receiver_paused_ack.wait()
 
-    if reply == "NOT FOUND":
-        print("File not found on server.")
-        return
+    try:
+        send_line(sock, f"/download {filename}")
+        reply = recv_line_direct(sock)
 
-    filesize = int(reply)
-    send_line(sock, "OK")
+        if reply == "NOT FOUND":
+            print("File not found on server.")
+            return
 
-    filepath = os.path.join(DOWNLOAD_FOLDER, filename)
+        filesize = int(reply)
+        send_line(sock, "OK")
 
-    with open(filepath, "wb") as f:
-        remaining = filesize
-        while remaining > 0:
-            data = sock.recv(min(SIZE, remaining))
-            if not data:
-                break
-            f.write(data)
-            remaining -= len(data)
+        filepath = os.path.join(DOWNLOAD_FOLDER, filename)
 
-    print(f"Downloaded: {filepath}")
+        with open(filepath, "wb") as f:
+            remaining = filesize
+            while remaining > 0:
+                try:
+                    data = sock.recv(min(SIZE, remaining))
+                except socket.timeout:
+                    continue
+                if not data:
+                    break
+                f.write(data)
+                remaining -= len(data)
+
+        if remaining == 0:
+            print(f"Downloaded: {filepath}")
+        else:
+            print("Download interrupted.")
+
+    finally:
+        pause_receiver.clear()
+        receiver_paused_ack.clear()
 
 
 def do_message(sock, text):
@@ -128,6 +166,7 @@ def main():
 
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((HOST, PORT))
+    client.settimeout(0.2)
 
     receive_thread = threading.Thread(target=receive_messages, args=(client,), daemon=True)
     receive_thread.start()
