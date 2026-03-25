@@ -504,6 +504,34 @@ while True:
 
 <br>
 
+### server-poll.py
+![file server-poll.py](server.poll.py)
+File `server-poll.py` ini adalah implementasi TCP file server yang bisa menangani banyak client sekaligus tanpa menggunakan thread. Jadi semua koneksi ditangani dalam satu proses utama dengan bantuan `select.poll()`, yang berfungsi untuk memantau banyak socket dan memberi tahu kapan socket tersebut siap dibaca atau ditulis. Karena socket di-set non-blocking, server tidak akan berhenti menunggu satu client saja, tapi bisa langsung lanjut menangani client lain yang siap.
+
+Di awal program, server dibuat dengan socket TCP biasa, lalu di-bind ke alamat dan port tertentu. Folder `server_files` juga terdapat folder sebagai tempat penyimpanan file di sisi server. Setelah itu, server didaftarkan ke poller supaya setiap ada koneksi baru atau data masuk, server bisa langsung mendeteksinya lewat event yang diberikan oleh `poll()`.
+
+Karena tidak menggunakan thread, server harus menyimpan kondisi setiap client secara manual. Di sini digunakan beberapa struktur data seperti `clients` untuk menyimpan alamat client, `buffers` untuk menampung data yang masuk (karena data TCP bisa datang tidak langsung full), serta `upload_states` dan `download_states` untuk menyimpan status transfer file. Misalnya saat client sedang upload, server harus tahu sudah berapa byte yang diterima dan apakah masih menunggu ukuran file atau sudah masuk ke isi file.
+
+Untuk komunikasi, server membedakan dua jenis data, yaitu perintah teks dan data file. Perintah seperti `/list`, `/upload`, `/download`, dan `/msg` dikirim dalam bentuk teks yang diakhiri newline, lalu diproses oleh fungsi `handle_command`. Sedangkan untuk file, data dikirim dalam bentuk biner per chunk. Supaya tidak tertukar, server menggunakan mekanisme buffer dan parsing per baris melalui `recv_line_from_buffer`. 
+
+Alur dari command `/list` yaitu akan mengirim daftar file di server. `/upload` dimulai dengan client mengirim nama file, lalu ukuran file, baru isi file dikirim bertahap sampai selesai. `/download` kebalikannya, server kirim ukuran file dulu, lalu menunggu konfirmasi "OK" dari client sebelum mengirim isi file. Untuk `/msg`, server akan broadcast pesan ke semua client lain dengan format tertentu supaya bisa dikenali sebagai broadcast di sisi client.
+
+Loop utama server berjalan dengan `poller.poll()`. Setiap event yang muncul akan dicek, kalau dari socket server berarti ada client baru yang connect, kalau dari socket client berarti ada data masuk. Data ini kemudian diproses berdasarkan kondisi client, apakah sedang upload, download, atau hanya mengirim command biasa. Terakhir, ada fungsi `cleanup_client` menjaga server tetap stabil. Kalau ada client yang disconnect atau error, semua data terkait client tersebut dibersihkan, termasuk buffer dan file yang mungkin masih terbuka. Ini mencegah memory leak dan memastikan server tetap bisa melayani client lain tanpa masalah.
+
+### server-thread.py
+![file server-thread.py](server.thread.py)
+File `server-thread.py` ini mengimplementasikan TCP file server dengan multithreading, di mana setiap client yang terhubung akan dilayani oleh satu thread tersendiri. Jadi saat ada beberapa client yang melakukan aktivitas seperti upload, download, atau kirim pesan, semuanya bisa berjalan secara bersamaan tanpa harus saling menunggu. 
+
+Untuk mengelola client yang sedang aktif, server menyimpan semua koneksi di dalam list `clients`. Karena list ini diakses oleh banyak thread sekaligus, digunakan `clients_lock` untuk mencegah konflik saat ada thread yang menambah atau menghapus client. Tanpa lock ini, bisa terjadi race condition, misalnya dua thread mencoba mengubah list di waktu yang sama dan menyebabkan error. Jadi setiap operasi yang berhubungan dengan list client selalu  di-lock agar aman.
+
+Dari sisi komunikasi, server membedakan antara perintah teks dan data file. Perintah seperti `/list`, `/upload`, `/download`, `/msg`, dan `quit` dikirim dalam bentuk teks satu baris (diakhiri newline), dan diproses menggunakan fungsi `recv_line`. Sedangkan untuk data file, digunakan metode chunk-based, di mana file dikirim sedikit demi sedikit dalam bentuk biner. Karena setiap client punya thread sendiri jadi lebih sederhana, di mana server tidak perlu menyimpan banyak state seperti pada model poll atau select.
+
+Untuk fitur-fiturnya, `/list` akan mengirim daftar file yang ada di folder server. Untuk `/upload` dimulai dengan server mengirim `OK`, lalu client mengirim ukuran file dan isi file sampai selesai. Kalau berhasil, server mengirim `Upload finished.` dan memberi tahu client lain bahwa ada file baru. `/download` bekerja sebaliknya, server kirim ukuran file dulu, lalu menunggu konfirmasi `OK` sebelum mengirim isi file. Untuk `/msg`, server akan mengirim pesan ke semua client lain menggunakan fungsi `broadcast`, sekaligus menangani jika ada client yang sudah tidak aktif.
+
+Alur utama server ada di fungsi `main()`, di mana server menunggu koneksi masuk menggunakan `accept()`. Setiap kali ada client baru, server langsung membuat thread baru yang menjalankan fungsi `handle_client`. Di dalam fungsi ini, server terus membaca command dari client sampai client disconnect atau mengirim `quit`. Setelah itu, koneksi ditutup dan client dihapus dari list.
+
+
+
 ## Screenshot Hasil
 ### Modul synchronous
 `server`:
@@ -524,3 +552,14 @@ while True:
 ![](/media/select_client1.png)
 
 ![](/media/select_client2.png)
+
+
+### Modul poll
+
+`server and clients`  
+![img](/media/server-poll.jpeg)
+
+
+### Modul thread
+`server and clients`  
+![img](/media/server-thread-img.jpeg)
