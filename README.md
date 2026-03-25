@@ -202,6 +202,8 @@ if __name__ == "__main__":
 
 `client.py` adalah program sebagai client untuk berkomunikasi dengan server. Mempunyai beberapa command seperti `/list`, `/upload`, `/download`, dan `/msg`. Client membuat koneksi ke server dan berkomunikasi menggunakan fungsi `send_line()` dan `recv_line()`. Saat client mengirim command, fungsi seperti `do_list()`, `do_upload()`, dan `do_download()` akan dijalankan untuk mengirim request ke server dan menerima respon dari server. File hasil download disimpan ke folder `client_downloads` dan file yang diupload akan tersimpan di server di folder `server_files`. Untuk implementasi menerima broadcast, dibuat thread khusus `receive_messages` untuk menerima messages dari server dan client lain. Pesan broadcast ditandai dengan prefix "BROADCAST:" dan langsung ditampilkan, sedangkan respon biasa dimasukkan ke `response_queue` agar bisa diambil oleh fungsi `get_response()`. Dengan cara ini, client bisa tetap menerima pesan kapan saja tanpa mengganggu alur command, sehingga fitur broadcast bisa berjalan bersamaan dengan transfer file.
 
+<br>
+
 ### `server-sync.py`
 ```python
 import os
@@ -340,6 +342,8 @@ if __name__ == "__main__":
 ```
 
 `server-sync.py` adalah program server untuk berkomunikasi dengan client dan berjalan secara synchronous (hanya dapat menerima 1 client per waktu). Server akan menunggu koneksi dari client menggunakan `accept()`, kemudian setiap client yang terconnect akan ditambahkan ke dalam list `clients`. Komunikasi antara server dan client dilakukan menggunakan fungsi `send_line()` untuk mengirim data dan `recv_line()` untuk menerima data. Server ini mengsupport beberapa command dari client seperti `/list`, `/upload`, `/download`, dan `/msg`. Saat server menerima command, fungsi `handle_client()` akan memproses request tersebut. `/list` digunakan untuk menampilkan daftar file yang ada di folder `server_files`, `/upload` digunakan untuk menerima file dari client dan menyimpannya ke server, dan `/download` digunakan untuk mengirim file dari server ke client. Untuk fitur broadcast, server menggunakan fungsi `broadcast()` untuk mengirim message ke semua client yang terhubung kecuali sender. Message broadcast ditandai dengan prefix "BROADCAST:" sehingga dapat dikenali oleh client. Dengan mekanisme ini, server bisa menangani transfer file dan juga mengsupport komunikasi antar client melalui fitur broadcast.
+
+<br>
 
 ### `server-select.py`
 ```python
@@ -1049,11 +1053,11 @@ Alur utama server ada di fungsi `main()`, di mana server menunggu koneksi masuk 
 
 
 ### Modul poll
-
-`server and clients`  
+`server and clients`:
 ![img](/media/server-poll.jpeg)
 
+<br>
 
 ### Modul thread
-`server and clients`  
+`server and clients`:
 ![img](/media/server-thread-img.jpeg)
